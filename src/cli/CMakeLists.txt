@@ -38,7 +38,8 @@ set(cli_SOURCES
         Open.cpp
         Remove.cpp
         RemoveGroup.cpp
-        Show.cpp)
+        Show.cpp
+        UnlockSSHKey.cpp)
 
 add_library(cli STATIC ${cli_SOURCES})
 target_link_libraries(cli Qt5::Core Qt5::Widgets)

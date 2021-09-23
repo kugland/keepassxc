@@ -30,7 +30,7 @@
 
 #include <QLocale>
 
-const QCommandLineOption Show::AllOption = QCommandLineOption(QStringList() << "a"
+const QCommandLineOption UnlockSSHKey::AllOption = QCommandLineOption(QStringList() << "a"
                                                                              << "all",
                                                                QObject::tr("Unlock all the SSH keys in the database."));
 
@@ -38,7 +38,7 @@ UnlockSSHKey::UnlockSSHKey()
 {
     name = QString("unlock-ssh-key");
     description = QObject::tr("Unlock one of multiple ssh keys from the database and add them to the running SSH agent.");
-    options.append(Show::AllOption);
+    options.append(UnlockSSHKey::AllOption);
     positionalArguments.append({QString("entry"), QObject::tr("Name of the entry with an SSH key to unlock."), QString("")});
 }
 
@@ -63,8 +63,18 @@ int UnlockSSHKey::executeWithDatabase(QSharedPointer<Database> database, QShared
     }
 
     OpenSSHKey key;
-    if (settings.toOpenSSHKey(currentEntry, key, true)) {
-        SSHAgent::instance()->addIdentity(key, settings, database()->uuid());
+    KeeAgentSettings settings;
+
+    if (settings.toOpenSSHKey(entry, key, true)) {
+        if (!settings.fromEntry(entry)) {
+            return EXIT_FAILURE;
+        }
+        // @hifi: Should I check for the KeeAgent settings from the CLI?
+        // if (!KeeAgentSettings::inEntryAttachments(currentEntry->attachments())) {
+            // return EXIT_FAILURE;
+        // }
+
+        SSHAgent::instance()->addIdentity(key, settings, database->uuid());
         out << QObject::tr("Successfully added SSH key from entry %1 to the SSH agent.").arg(entryPath) << endl;
         return EXIT_SUCCESS;
     } else {
