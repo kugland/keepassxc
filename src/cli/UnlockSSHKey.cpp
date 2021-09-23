@@ -39,7 +39,7 @@ UnlockSSHKey::UnlockSSHKey()
     name = QString("unlock-ssh-key");
     description = QObject::tr("Unlock one of multiple ssh keys from the database and add them to the running SSH agent.");
     options.append(UnlockSSHKey::AllOption);
-    positionalArguments.append({QString("entry"), QObject::tr("Name of the entry with an SSH key to unlock."), QString("")});
+    optionalArguments.append({QString("entry"), QObject::tr("Name of the entry with an SSH key to unlock."), QString("")});
 }
 
 int UnlockSSHKey::executeWithDatabase(QSharedPointer<Database> database, QSharedPointer<QCommandLineParser> parser)
@@ -53,6 +53,7 @@ int UnlockSSHKey::executeWithDatabase(QSharedPointer<Database> database, QShared
 
     if (unlockAll) {
         sshAgent()->databaseUnlocked(database);
+        out << QObject::tr("Successfully added all the SSH keys to the SSH agent.") << endl;
         return EXIT_SUCCESS;
     }
 
