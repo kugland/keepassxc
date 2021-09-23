@@ -49,6 +49,9 @@
 #include "Show.h"
 #include "TextStream.h"
 #include "Utils.h"
+#ifdef WITH_XC_SSHAGENT
+#include "UnlockSSHKey.h"
+#endif
 
 const QCommandLineOption Command::HelpOption = QCommandLineOption(QStringList()
 #ifdef Q_OS_WIN
@@ -186,6 +189,9 @@ namespace Commands
         s_commands.insert(QStringLiteral("rm"), QSharedPointer<Command>(new Remove()));
         s_commands.insert(QStringLiteral("rmdir"), QSharedPointer<Command>(new RemoveGroup()));
         s_commands.insert(QStringLiteral("show"), QSharedPointer<Command>(new Show()));
+#ifdef WITH_XC_SSHAGENT
+        s_commands.insert(QStringLiteral("unlock-ssh-key"), QSharedPointer<Command>(new UnlockSSHKey()));
+#endif
 
         if (interactive) {
             s_commands.insert(QStringLiteral("exit"), QSharedPointer<Command>(new Exit("exit")));
