@@ -26,6 +26,7 @@
 #include "core/Entry.h"
 #include "core/Global.h"
 #include "core/Group.h"
+#include "sshagent/SSHAgent.h"
 
 #include <QLocale>
 
@@ -48,9 +49,12 @@ int UnlockSSHKey::executeWithDatabase(QSharedPointer<Database> database, QShared
 
     const QStringList args = parser->positionalArguments();
     const QString& entryPath = args.at(1);
-    bool showTotp = parser->isSet(Show::TotpOption);
-    bool showProtectedAttributes = parser->isSet(Show::ProtectedAttributesOption);
-    QStringList attributes = parser->values(Show::AttributesOption);
+    bool unlockAll = parser->isSet(UnlockSSHKey::AllOption);
+
+    if (unlockAll) {
+        sshAgent()->databaseUnlocked(database);
+        return EXIT_SUCCESS;
+    }
 
     Entry* entry = database->rootGroup()->findEntryByPath(entryPath);
     if (!entry) {
@@ -58,46 +62,14 @@ int UnlockSSHKey::executeWithDatabase(QSharedPointer<Database> database, QShared
         return EXIT_FAILURE;
     }
 
-    if (showTotp && !entry->hasTotp()) {
-        err << QObject::tr("Entry with path %1 has no TOTP set up.").arg(entryPath) << endl;
+    OpenSSHKey key;
+    if (settings.toOpenSSHKey(currentEntry, key, true)) {
+        SSHAgent::instance()->addIdentity(key, settings, database()->uuid());
+        out << QObject::tr("Successfully added SSH key from entry %1 to the SSH agent.").arg(entryPath) << endl;
+        return EXIT_SUCCESS;
+    } else {
+        err << QObject::tr("Error while adding  SSH key from entry %1 to the SSH agent: %2.").arg(entryPath, key.errorString()) << endl;
         return EXIT_FAILURE;
     }
 
-    // If no attributes specified, output the default attribute set.
-    bool showDefaultAttributes = attributes.isEmpty() && !showTotp;
-    if (showDefaultAttributes) {
-        attributes = EntryAttributes::DefaultAttributes;
-    }
-
-    // Iterate over the attributes and output them line-by-line.
-    bool encounteredError = false;
-    for (const QString& attributeName : asConst(attributes)) {
-        QStringList attrs = Utils::findAttributes(*entry->attributes(), attributeName);
-        if (attrs.isEmpty()) {
-            encounteredError = true;
-            err << QObject::tr("ERROR: unknown attribute %1.").arg(attributeName) << endl;
-            continue;
-        } else if (attrs.size() > 1) {
-            encounteredError = true;
-            err << QObject::tr("ERROR: attribute %1 is ambiguous, it matches %2.")
-                       .arg(attributeName, QLocale().createSeparatedList(attrs))
-                << endl;
-            continue;
-        }
-        QString canonicalName = attrs[0];
-        if (showDefaultAttributes) {
-            out << canonicalName << ": ";
-        }
-        if (entry->attributes()->isProtected(canonicalName) && showDefaultAttributes && !showProtectedAttributes) {
-            out << "PROTECTED" << endl;
-        } else {
-            out << entry->resolveMultiplePlaceholders(entry->attributes()->value(canonicalName)) << endl;
-        }
-    }
-
-    if (showTotp) {
-        out << entry->totp() << endl;
-    }
-
-    return encounteredError ? EXIT_FAILURE : EXIT_SUCCESS;
 }
