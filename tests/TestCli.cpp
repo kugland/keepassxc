@@ -206,6 +206,8 @@ void TestCli::setInput(const QStringList& input)
 
 void TestCli::testBatchCommands()
 {
+    int expectedCommandCount = 22;
+
     Commands::setupCommands(false);
     QVERIFY(Commands::getCommand("add"));
     QVERIFY(Commands::getCommand("analyze"));
@@ -229,12 +231,20 @@ void TestCli::testBatchCommands()
     QVERIFY(Commands::getCommand("rm"));
     QVERIFY(Commands::getCommand("rmdir"));
     QVERIFY(Commands::getCommand("show"));
+#ifdef WITH_XC_SSHAGENT
+    QVERIFY(Commands::getCommand("unlock-ssh-key"));
+    ++expectedCommandCount;
+#endif
+
     QVERIFY(!Commands::getCommand("doesnotexist"));
-    QCOMPARE(Commands::getCommands().size(), 22);
+
+    QCOMPARE(Commands::getCommands().size(), expectedCommandCount);
 }
 
 void TestCli::testInteractiveCommands()
 {
+    int expectedCommandCount = 22;
+
     Commands::setupCommands(true);
     QVERIFY(Commands::getCommand("add"));
     QVERIFY(Commands::getCommand("analyze"));
@@ -258,8 +268,14 @@ void TestCli::testInteractiveCommands()
     QVERIFY(Commands::getCommand("rm"));
     QVERIFY(Commands::getCommand("rmdir"));
     QVERIFY(Commands::getCommand("show"));
+#ifdef WITH_XC_SSHAGENT
+    QVERIFY(Commands::getCommand("unlock-ssh-key"));
+    ++expectedCommandCount;
+#endif
+
     QVERIFY(!Commands::getCommand("doesnotexist"));
-    QCOMPARE(Commands::getCommands().size(), 22);
+
+    QCOMPARE(Commands::getCommands().size(), expectedCommandCount);
 }
 
 void TestCli::testAdd()
